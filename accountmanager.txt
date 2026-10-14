@@ -1,0 +1,136 @@
+```lua
+local Players = game:GetService("Players")
+local GuiService = game:GetService("GuiService")
+
+local player = Players.LocalPlayer
+local playerGui = player:WaitForChild("PlayerGui")
+
+-- Remove old menu
+local oldGui = playerGui:FindFirstChild("VIPServerManager")
+if oldGui then
+    oldGui:Destroy()
+end
+
+local gui = Instance.new("ScreenGui")
+gui.Name = "VIPServerManager"
+gui.ResetOnSpawn = false
+gui.DisplayOrder = 100
+gui.Parent = playerGui
+
+local frame = Instance.new("Frame")
+frame.Size = UDim2.fromOffset(330, 205)
+frame.Position = UDim2.new(0.5, -165, 0.3, 0)
+frame.BackgroundColor3 = Color3.fromRGB(28, 29, 36)
+frame.BorderSizePixel = 0
+frame.Active = true
+frame.Parent = gui
+
+Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 12)
+
+local title = Instance.new("TextLabel")
+title.Size = UDim2.new(1, -40, 0, 38)
+title.Position = UDim2.fromOffset(10, 0)
+title.BackgroundTransparency = 1
+title.Text = "VIP SERVER MANAGER"
+title.TextColor3 = Color3.fromRGB(255, 195, 65)
+title.Font = Enum.Font.GothamBold
+title.TextSize = 17
+title.Parent = frame
+
+local close = Instance.new("TextButton")
+close.Size = UDim2.fromOffset(28, 28)
+close.Position = UDim2.new(1, -32, 0, 5)
+close.BackgroundTransparency = 1
+close.Text = "X"
+close.TextColor3 = Color3.new(1, 1, 1)
+close.TextSize = 15
+close.Parent = frame
+
+local linkBox = Instance.new("TextBox")
+linkBox.Size = UDim2.new(1, -24, 0, 38)
+linkBox.Position = UDim2.fromOffset(12, 45)
+linkBox.BackgroundColor3 = Color3.fromRGB(46, 47, 57)
+linkBox.PlaceholderText = "Paste VIP server link here"
+linkBox.Text = ""
+linkBox.TextColor3 = Color3.new(1, 1, 1)
+linkBox.PlaceholderColor3 = Color3.fromRGB(175, 175, 185)
+linkBox.Font = Enum.Font.Gotham
+linkBox.TextSize = 12
+linkBox.ClearTextOnFocus = false
+linkBox.Parent = frame
+
+Instance.new("UICorner", linkBox).CornerRadius = UDim.new(0, 7)
+
+local saveButton = Instance.new("TextButton")
+saveButton.Size = UDim2.new(1, -24, 0, 34)
+saveButton.Position = UDim2.fromOffset(12, 92)
+saveButton.BackgroundColor3 = Color3.fromRGB(65, 95, 170)
+saveButton.Text = "SAVE LINK"
+saveButton.TextColor3 = Color3.new(1, 1, 1)
+saveButton.Font = Enum.Font.GothamBold
+saveButton.TextSize = 13
+saveButton.Parent = frame
+
+Instance.new("UICorner", saveButton).CornerRadius = UDim.new(0, 7)
+
+local joinButton = Instance.new("TextButton")
+joinButton.Size = UDim2.new(1, -24, 0, 34)
+joinButton.Position = UDim2.fromOffset(12, 134)
+joinButton.BackgroundColor3 = Color3.fromRGB(48, 155, 91)
+joinButton.Text = "JOIN VIP"
+joinButton.TextColor3 = Color3.new(1, 1, 1)
+joinButton.Font = Enum.Font.GothamBold
+joinButton.TextSize = 13
+joinButton.Parent = frame
+
+Instance.new("UICorner", joinButton).CornerRadius = UDim.new(0, 7)
+
+local status = Instance.new("TextLabel")
+status.Size = UDim2.new(1, -24, 0, 24)
+status.Position = UDim2.fromOffset(12, 174)
+status.BackgroundTransparency = 1
+status.Text = "Paste a VIP link to begin"
+status.TextColor3 = Color3.fromRGB(205, 205, 215)
+status.Font = Enum.Font.Gotham
+status.TextSize = 11
+status.Parent = frame
+
+local savedLink = ""
+
+saveButton.Activated:Connect(function()
+    local link = linkBox.Text:match("^%s*(.-)%s*$")
+
+    if link == "" then
+        status.Text = "Paste a link first!"
+        return
+    end
+
+    if not link:match("^https?://[%w%-%.]*roblox%.com/") then
+        status.Text = "Invalid Roblox URL"
+        return
+    end
+
+    savedLink = link
+    status.Text = "VIP link saved for this session"
+end)
+
+joinButton.Activated:Connect(function()
+    if savedLink == "" then
+        status.Text = "Save a link first!"
+        return
+    end
+
+    status.Text = "Open this link in the Roblox client"
+
+    -- Roblox LocalScripts cannot reliably open arbitrary
+    -- external URLs or join private servers from invite links.
+    -- Use the official Roblox client to follow the invitation.
+    print("VIP invitation link:", savedLink)
+end)
+
+close.Activated:Connect(function()
+    gui:Destroy()
+end)
+
+print("VIP Server Manager loaded")
+```
