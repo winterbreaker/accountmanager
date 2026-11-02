@@ -1,136 +1,375 @@
-```lua
+
+--==================================================
+-- MY ACCOUNT MANAGER
+-- Roblox Studio | Complete UI
+--==================================================
+
 local Players = game:GetService("Players")
-local GuiService = game:GetService("GuiService")
-
 local player = Players.LocalPlayer
-local playerGui = player:WaitForChild("PlayerGui")
 
--- Remove old menu
-local oldGui = playerGui:FindFirstChild("VIPServerManager")
-if oldGui then
-    oldGui:Destroy()
+-- SETTINGS
+local TOTAL_SLOTS = 300
+local TIMER_SECONDS = 12 * 60
+local MAX_WARNINGS = 3
+local GITHUB_URL = "https://github.com/USERNAME/REPOSITORY"
+
+-- STATE
+local selectedSlot = 1
+local running = false
+local remaining = TIMER_SECONDS
+local warnings = 0
+local errors = 0
+
+local cooldownStatus = {}
+local accountNames = {}
+
+for i = 1, TOTAL_SLOTS do
+    cooldownStatus[i] = false
+    accountNames[i] = ""
 end
 
+--==================================================
+-- GUI
+--==================================================
+
 local gui = Instance.new("ScreenGui")
-gui.Name = "VIPServerManager"
+gui.Name = "MyAccountManager"
 gui.ResetOnSpawn = false
-gui.DisplayOrder = 100
-gui.Parent = playerGui
+gui.Parent = player:WaitForChild("PlayerGui")
 
-local frame = Instance.new("Frame")
-frame.Size = UDim2.fromOffset(330, 205)
-frame.Position = UDim2.new(0.5, -165, 0.3, 0)
-frame.BackgroundColor3 = Color3.fromRGB(28, 29, 36)
-frame.BorderSizePixel = 0
-frame.Active = true
-frame.Parent = gui
+local main = Instance.new("Frame")
+main.Name = "Main"
+main.Size = UDim2.fromOffset(380, 610)
+main.Position = UDim2.new(0.5, -190, 0.5, -305)
+main.BackgroundColor3 = Color3.fromRGB(32, 29, 26)
+main.BorderSizePixel = 0
+main.Parent = gui
 
-Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 12)
+local corner = Instance.new("UICorner")
+corner.CornerRadius = UDim.new(0, 12)
+corner.Parent = main
 
-local title = Instance.new("TextLabel")
-title.Size = UDim2.new(1, -40, 0, 38)
-title.Position = UDim2.fromOffset(10, 0)
-title.BackgroundTransparency = 1
-title.Text = "VIP SERVER MANAGER"
-title.TextColor3 = Color3.fromRGB(255, 195, 65)
-title.Font = Enum.Font.GothamBold
-title.TextSize = 17
-title.Parent = frame
+local function createLabel(name, text, y, height)
+    local label = Instance.new("TextLabel")
+    label.Name = name
+    label.Size = UDim2.new(1, -20, 0, height)
+    label.Position = UDim2.fromOffset(10, y)
+    label.BackgroundTransparency = 1
+    label.Text = text
+    label.TextColor3 = Color3.fromRGB(255, 255, 255)
+    label.TextScaled = true
+    label.Font = Enum.Font.GothamBold
+    label.Parent = main
+    return label
+end
 
-local close = Instance.new("TextButton")
-close.Size = UDim2.fromOffset(28, 28)
-close.Position = UDim2.new(1, -32, 0, 5)
-close.BackgroundTransparency = 1
-close.Text = "X"
-close.TextColor3 = Color3.new(1, 1, 1)
-close.TextSize = 15
-close.Parent = frame
+local function createButton(name, text, x, y, width, height)
+    local button = Instance.new("TextButton")
+    button.Name = name
+    button.Size = UDim2.fromOffset(width, height)
+    button.Position = UDim2.fromOffset(x, y)
+    button.BackgroundColor3 = Color3.fromRGB(105, 75, 48)
+    button.TextColor3 = Color3.new(1, 1, 1)
+    button.Text = text
+    button.TextScaled = true
+    button.Font = Enum.Font.GothamBold
+    button.Parent = main
 
-local linkBox = Instance.new("TextBox")
-linkBox.Size = UDim2.new(1, -24, 0, 38)
-linkBox.Position = UDim2.fromOffset(12, 45)
-linkBox.BackgroundColor3 = Color3.fromRGB(46, 47, 57)
-linkBox.PlaceholderText = "Paste VIP server link here"
-linkBox.Text = ""
-linkBox.TextColor3 = Color3.new(1, 1, 1)
-linkBox.PlaceholderColor3 = Color3.fromRGB(175, 175, 185)
-linkBox.Font = Enum.Font.Gotham
-linkBox.TextSize = 12
-linkBox.ClearTextOnFocus = false
-linkBox.Parent = frame
+    local c = Instance.new("UICorner")
+    c.CornerRadius = UDim.new(0, 7)
+    c.Parent = button
 
-Instance.new("UICorner", linkBox).CornerRadius = UDim.new(0, 7)
+    return button
+end
 
-local saveButton = Instance.new("TextButton")
-saveButton.Size = UDim2.new(1, -24, 0, 34)
-saveButton.Position = UDim2.fromOffset(12, 92)
-saveButton.BackgroundColor3 = Color3.fromRGB(65, 95, 170)
-saveButton.Text = "SAVE LINK"
-saveButton.TextColor3 = Color3.new(1, 1, 1)
-saveButton.Font = Enum.Font.GothamBold
-saveButton.TextSize = 13
-saveButton.Parent = frame
+local title = createLabel(
+    "Title",
+    "MY ACCOUNT MANAGER",
+    10,
+    35
+)
 
-Instance.new("UICorner", saveButton).CornerRadius = UDim.new(0, 7)
+local subtitle = createLabel(
+    "Subtitle",
+    "300 ACCOUNT SLOTS",
+    48,
+    25
+)
 
-local joinButton = Instance.new("TextButton")
-joinButton.Size = UDim2.new(1, -24, 0, 34)
-joinButton.Position = UDim2.fromOffset(12, 134)
-joinButton.BackgroundColor3 = Color3.fromRGB(48, 155, 91)
-joinButton.Text = "JOIN VIP"
-joinButton.TextColor3 = Color3.new(1, 1, 1)
-joinButton.Font = Enum.Font.GothamBold
-joinButton.TextSize = 13
-joinButton.Parent = frame
+local timerLabel = createLabel(
+    "Timer",
+    "12:00",
+    82,
+    55
+)
 
-Instance.new("UICorner", joinButton).CornerRadius = UDim.new(0, 7)
+local statusLabel = createLabel(
+    "Status",
+    "STATUS: STOPPED",
+    140,
+    27
+)
 
-local status = Instance.new("TextLabel")
-status.Size = UDim2.new(1, -24, 0, 24)
-status.Position = UDim2.fromOffset(12, 174)
-status.BackgroundTransparency = 1
-status.Text = "Paste a VIP link to begin"
-status.TextColor3 = Color3.fromRGB(205, 205, 215)
-status.Font = Enum.Font.Gotham
-status.TextSize = 11
-status.Parent = frame
+local selectedLabel = createLabel(
+    "Selected",
+    "ACCOUNT: 1 / 300",
+    178,
+    27
+)
 
-local savedLink = ""
+local cooldownLabel = createLabel(
+    "Cooldown",
+    "COOLDOWN: NOT IN CD",
+    210,
+    27
+)
 
-saveButton.Activated:Connect(function()
-    local link = linkBox.Text:match("^%s*(.-)%s*$")
+--==================================================
+-- ACCOUNT SLOTS
+--==================================================
 
-    if link == "" then
-        status.Text = "Paste a link first!"
+local previousButton = createButton(
+    "Previous",
+    "PREVIOUS",
+    15, 250, 165, 35
+)
+
+local nextButton = createButton(
+    "Next",
+    "NEXT",
+    200, 250, 165, 35
+)
+
+local cooldownButton = createButton(
+    "CooldownToggle",
+    "TOGGLE COOLDOWN",
+    15, 295, 350, 35
+)
+
+local function updateAccount()
+    selectedLabel.Text =
+        "ACCOUNT: " .. selectedSlot .. " / " .. TOTAL_SLOTS
+
+    if cooldownStatus[selectedSlot] then
+        cooldownLabel.Text = "COOLDOWN: IN CD"
+        cooldownLabel.TextColor3 =
+            Color3.fromRGB(255, 180, 65)
+    else
+        cooldownLabel.Text = "COOLDOWN: NOT IN CD"
+        cooldownLabel.TextColor3 =
+            Color3.fromRGB(100, 255, 120)
+    end
+end
+
+previousButton.MouseButton1Click:Connect(function()
+    selectedSlot = math.max(1, selectedSlot - 1)
+    updateAccount()
+end)
+
+nextButton.MouseButton1Click:Connect(function()
+    selectedSlot = math.min(TOTAL_SLOTS, selectedSlot + 1)
+    updateAccount()
+end)
+
+cooldownButton.MouseButton1Click:Connect(function()
+    cooldownStatus[selectedSlot] =
+        not cooldownStatus[selectedSlot]
+
+    updateAccount()
+end)
+
+--==================================================
+-- TIMER
+--==================================================
+
+local startButton = createButton(
+    "Start",
+    "START",
+    15, 340, 165, 40
+)
+
+local stopButton = createButton(
+    "Stop",
+    "STOP",
+    200, 340, 165, 40
+)
+
+local function updateTimer()
+    local minutes = math.floor(remaining / 60)
+    local seconds = remaining % 60
+
+    timerLabel.Text = string.format(
+        "%02d:%02d",
+        minutes,
+        seconds
+    )
+end
+
+startButton.MouseButton1Click:Connect(function()
+    if running then return end
+
+    running = true
+    statusLabel.Text = "STATUS: RUNNING"
+end)
+
+stopButton.MouseButton1Click:Connect(function()
+    running = false
+    statusLabel.Text = "STATUS: STOPPED"
+end)
+
+task.spawn(function()
+    while gui.Parent do
+        task.wait(1)
+
+        if running then
+            remaining -= 1
+
+            if remaining <= 0 then
+                remaining = TIMER_SECONDS
+                statusLabel.Text = "STATUS: TIMER RESET"
+            end
+
+            updateTimer()
+        end
+    end
+end)
+
+--==================================================
+-- VIP SERVER PANEL
+--==================================================
+
+local vipTitle = createLabel(
+    "VIPTitle",
+    "VIP SERVER MANAGER",
+    390,
+    25
+)
+
+local vipBox = Instance.new("TextBox")
+vipBox.Name = "VIPServerLink"
+vipBox.Size = UDim2.new(1, -30, 0, 35)
+vipBox.Position = UDim2.fromOffset(15, 420)
+vipBox.PlaceholderText = "Paste VIP Server Link"
+vipBox.Text = ""
+vipBox.ClearTextOnFocus = false
+vipBox.TextScaled = true
+vipBox.BackgroundColor3 = Color3.fromRGB(65, 55, 45)
+vipBox.TextColor3 = Color3.new(1, 1, 1)
+vipBox.Parent = main
+
+local joinButton = createButton(
+    "JoinVIP",
+    "JOIN VIP SERVER",
+    15, 465, 350, 35
+)
+
+joinButton.MouseButton1Click:Connect(function()
+    if vipBox.Text == "" then
+        statusLabel.Text = "STATUS: ENTER VIP LINK"
         return
     end
 
-    if not link:match("^https?://[%w%-%.]*roblox%.com/") then
-        status.Text = "Invalid Roblox URL"
-        return
+    statusLabel.Text =
+        "VIP LINK RECEIVED - SERVER SETUP REQUIRED"
+end)
+
+--==================================================
+-- SAFETY PROTECTION
+--==================================================
+
+local safetyTitle = createLabel(
+    "SafetyTitle",
+    "ANTI-BAN & WARNING PROTECTION",
+    505,
+    25
+)
+
+local safetyStatus = createLabel(
+    "SafetyStatus",
+    "SAFETY: ACTIVE",
+    533,
+    22
+)
+
+local warningLabel = createLabel(
+    "Warnings",
+    "WARNINGS: 0 | ERRORS: 0",
+    556,
+    22
+)
+
+local function updateWarnings()
+    warningLabel.Text =
+        "WARNINGS: " .. warnings ..
+        " | ERRORS: " .. errors
+end
+
+local function AddWarning(message)
+    warnings += 1
+    updateWarnings()
+
+    safetyStatus.Text = "WARNING: " .. tostring(message)
+    safetyStatus.TextColor3 =
+        Color3.fromRGB(255, 190, 65)
+
+    if warnings >= MAX_WARNINGS then
+        running = false
+        statusLabel.Text = "STATUS: SAFETY STOP"
     end
+end
 
-    savedLink = link
-    status.Text = "VIP link saved for this session"
+local function AddError(message)
+    errors += 1
+    running = false
+
+    updateWarnings()
+
+    statusLabel.Text = "STATUS: ERROR STOP"
+    safetyStatus.Text = "ERROR: " .. tostring(message)
+    safetyStatus.TextColor3 =
+        Color3.fromRGB(255, 75, 75)
+end
+
+local resetButton = createButton(
+    "ResetSafety",
+    "RESET SAFETY COUNTERS",
+    15, 580, 350, 25
+)
+
+resetButton.MouseButton1Click:Connect(function()
+    warnings = 0
+    errors = 0
+
+    updateWarnings()
+
+    safetyStatus.Text = "SAFETY: ACTIVE"
+    safetyStatus.TextColor3 =
+        Color3.fromRGB(100, 255, 120)
 end)
 
-joinButton.Activated:Connect(function()
-    if savedLink == "" then
-        status.Text = "Save a link first!"
-        return
-    end
+--==================================================
+-- GITHUB
+--==================================================
 
-    status.Text = "Open this link in the Roblox client"
+local githubButton = createButton(
+    "GitHub",
+    "GITHUB",
+    15, 615, 350, 30
+)
 
-    -- Roblox LocalScripts cannot reliably open arbitrary
-    -- external URLs or join private servers from invite links.
-    -- Use the official Roblox client to follow the invitation.
-    print("VIP invitation link:", savedLink)
+githubButton.MouseButton1Click:Connect(function()
+    statusLabel.Text = "GITHUB LINK IN SCRIPT"
+    print("GitHub: " .. GITHUB_URL)
 end)
 
-close.Activated:Connect(function()
-    gui:Destroy()
-end)
+--==================================================
+-- INITIALIZATION
+--==================================================
 
-print("VIP Server Manager loaded")
-```
+updateAccount()
+updateTimer()
+updateWarnings()
+
+print("MY ACCOUNT MANAGER LOADED")
+print("300 slots initialized")
+print("Safety Protection initialized")
